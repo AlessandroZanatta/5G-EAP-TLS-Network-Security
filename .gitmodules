@@ -1,0 +1,3 @@
+[submodule "materials/5G-tls-protocol-analysis"]
+	path = materials/5G-tls-protocol-analysis
+	url = https://github.com/bxk2008/5G-tls-protocol-analysis
