@@ -129,7 +129,7 @@
 	\end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Proverif - Applied \picnospace}
+\begin{frame}[fragile]{Applied \picnospace}
 	Grammar of processes ($P$, $Q$):\pause
 	\begin{lstlisting}
 0                    (* null process *)|*\pause*|
@@ -328,8 +328,8 @@ phase t;                   (* execute a process in phase t *)
 	\begin{figure}[t]
 		{
 			\setmscoptions
-			\setlength{\instdist}{6cm}
-			\setmscscale{0.65}
+			\setlength{\instdist}{4.5cm}
+			\setmscscale{0.8}
 
 			\begin{msc}{}
 				\declinst{ue}{}{UE}
@@ -350,13 +350,94 @@ phase t;                   (* execute a process in phase t *)
 				}{ue}{atk}
 				\nextlevel[6]
 				\mymess{$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{\hash{R_{UE1}, \textcolor{red}{R_{AUSF}^*}, R_{prekey}}}$}{atk}{ue}
+				\nextlevel
+				\myaction{event $termUE$}{ue}
+				\nextlevel[2]
 			\end{msc}
 		}
 	\end{figure}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
 	\frametitle{Counterexample for property A2}
+	\Wider[4cm]{
+		\begin{figure}[t]
+			{
+				\setmscoptions
+				\setlength{\instdist}{4cm}
+				\setmscscale{0.65}
+
+				\begin{msc}{}
+					\declinst{ue}{}{UE}
+					\declinst{atk}{}{Attacker}
+					\declinst{ausf}{}{AUSF}
+
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{atk}
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{atk}{ausf}
+					\nextlevel[3]
+					\mymess{$START$}{ausf}{atk}
+					\mymess{$START$}{atk}{ue}
+					\nextlevel[3]
+					\mymess{$R_{UE1}$}{ue}{atk}
+					\mymess{$R_{UE1}$}{atk}{ausf}
+					\nextlevel[3]
+					\mymess{$R_{AUSF}, Certificate\_AUSF$}{ausf}{atk}
+					\mymess{$R_{AUSF}, Certificate\_AUSF$}{atk}{ue}
+					\nextlevel
+					\myaction{event $sendPrek(R_{prekey})$}{ue}
+					\nextlevel[15]
+					\mess[text width=7cm,align=center]{\footnotesize
+						$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE,$
+						$\enc{handshake\_UE}{ssk_{UE}}$
+						$\enc{handshake\_UE}{\hash{R_{UE1}, R_{AUSF}, R_{prekey}}}$
+					}{ue}{atk}
+					\mess[text width=7cm,align=center]{\footnotesize
+						$\enc{\textcolor{red}{R_{prekey}^*}}{pk_{AUSF}}, Certificate\_UE,$
+						$\enc{handshake\_UE}{ssk_{UE}}$
+						$\enc{handshake\_UE}{\hash{R_{UE1}, R_{AUSF}, \textcolor{red}{R_{prekey}^*}}}$
+					}{atk}{ausf}
+
+					\nextlevel
+					\myaction{\textcolor{red}{event $acceptPrek(R_{prekey}^*)$}}{ausf}
+					\nextlevel[3]
+				\end{msc}
+			}
+		\end{figure}
+	}
 \end{frame}
 
+\section{Fixing the protocol}
+\begin{frame}[fragile]
+	\frametitle{Fixing the protocol}
+	\Wider[4cm]{
+		\begin{figure}[t]
+			{
+				\setmscoptions
+				\setlength{\instdist}{4cm}
+				\setmscscale{0.8}
+
+				\begin{msc}{}
+					\declinst{ue}{}{UE}
+					\declinst{ausf}{}{AUSF}
+
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{ausf}
+					\nextlevel[4]
+					\mymess{$\enc{START, \textcolor{red}{R_{UE}}}{\textcolor{red}{pk_{UE}}}$}{ausf}{ue}
+					\nextlevel[4]
+					\mymess{$\enc{R_{UE1}, \textcolor{red}{START}}{\textcolor{red}{pk_{AUSF}}}$}{ue}{ausf}
+					\nextlevel[4]
+					\mymess{$\enc{R_{AUSF}, \textcolor{red}{R_{UE1}}}{\textcolor{red}{pk_{UE}}}, Certificate\_AUSF$}{ausf}{ue}
+					\nextlevel[6]
+					\mess[text width=7cm,align=center]{\footnotesize
+						$\enc{R_{prekey}, \textcolor{red}{R_{UE}}}{pk_{AUSF}}, Certificate\_UE, $
+						$\enc{handshake\_UE}{ssk_{UE}}, $
+						$\enc{handshake\_UE}{K_{session}}$
+					}{ue}{ausf}
+					\nextlevel[4]
+					\mymess{$\enc{handshake\_AUSF, \textcolor{red}{SUPI}}{K_{session}}$}{ausf}{ue}
+				\end{msc}
+			}
+		\end{figure}
+	}
+\end{frame}
 \end{document}
