@@ -1,0 +1,362 @@
+\documentclass[usenames,dvipsnames,table]{beamer}
+
+%% Packages
+\usepackage{euler}
+\usepackage[euler]{textgreek}
+\usepackage{listings}
+\usepackage{msc}
+\usepackage{soul}
+%% -- 
+
+%% Beamer theme and options
+% \usetheme[numbering=fullbar]{focus}
+% \setbeamercovered{transparent}
+\usetheme{Arguelles}
+%% --
+
+%% Titlepage
+\title{Formal verification of the 5G EAP-TLS authentication protocol using Proverif}
+\author{Alessandro Zanatta}
+\institute{University of Pisa\newline\newline Reference paper (DOI): 10.1109/ACCESS.2020.2969474}
+\date{2023}
+% \logo{\includegraphics[height=1.2cm]{./logos/unipi}}
+\addtobeamertemplate{title page}{}{}
+%% -- 
+
+
+%% Commands
+% Applied pi-calculus
+\newcommand{\pic}{\textpi-calculus }
+\newcommand{\picnospace}{\textpi-calculus}
+
+% Cryptographic primitives
+\newcommand{\func}[2]{\ensuremath{\mbox{#1}\left(#2\right)}}
+\newcommand{\enc}[2]{\ensuremath{\left\{#1\right\}_{#2}}}
+\newcommand{\sha}[2]{\ensuremath{\func{sha#1}{#2}}}
+\newcommand{\kdf}[1]{\ensuremath{\func{kdf}{#1}}}
+\newcommand{\fpk}[1]{\ensuremath{\func{fpk}{#1}}}
+\newcommand{\hash}[1]{\ensuremath{\func{h}{#1}}}
+\newcommand{\modexp}[3]{\ensuremath{#1^#2 \mod{#3}}}
+\newcommand{\key}[1]{\ensuremath{k_{#1}}}
+\newcommand{\pkey}[1]{\ensuremath{pk_{#1}}}
+\newcommand{\skey}[1]{\ensuremath{sk_{#1}}}
+\newcommand{\newkey}[1]{\ensuremath{k'_{#1}}}
+\newcommand{\group}[1]{\ensuremath{\Z_{#1}}}
+
+% Simple highlighting
+\newcommand<>{\myhl}[1]{\alert#2{\hl#2{#1}}}
+
+% msc options command
+\newcommand\setmscoptions{%
+  \setlength{\instdist}{2cm}
+  \setlength{\levelheight}{0.2cm}
+  \setlength{\firstlevelheight}{0.45cm}
+
+  % \setlength{\levelheight}{1.5 \levelheight}%
+  % \setlength{\instwidth}{3cm}
+  \setmsckeyword{}
+  \drawframe{no}
+  \centering
+}
+
+\newcommand{\circlednum}[1]{\raisebox{.5pt}{\textcircled{\raisebox{-.9pt} {#1}}}}
+
+% Remove logo on certain slides
+\newcommand{\nologo}{\setbeamertemplate{logo}{}}
+
+% MSC formatting
+\newcommand{\mymess}[3]{\mess{\footnotesize #1}{#2}{#3}}
+\newcommand{\myaction}[2]{\action*{\footnotesize #1}{#2}}
+
+% Ignore margins when needed
+\newcommand\Wider[2][3em]{%
+\makebox[\linewidth][c]{%
+  \begin{minipage}{\dimexpr\textwidth+#1\relax}
+  \raggedright#2
+  \end{minipage}%
+  }%
+}
+%% -- 
+
+
+%% Listings
+\lstdefinelanguage{proverif}
+{
+  keywordstyle=\color{MidnightBlue}\bfseries,
+  keywordstyle=[2]\itshape,
+  keywordstyle=[3]\color{Green}\bfseries,
+  keywords={table, query, insert, leaks, phase, get, out, event, in, ., ;, attacker, |, new, if, else, then, !, let},
+  alsoletter={., ;, |, !},
+  keywords=[2]{Client, Server},
+  keywords=[3]{},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[n][\color{OliveGreen}\itshape]{(*}{*)},
+  morestring=[b]",
+}
+\lstset{basicstyle=\scriptsize\ttfamily,breaklines=true,captionpos=b,escapeinside={|*}{*|},language=proverif}
+%% --
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{What is Proverif?}
+\begin{frame}
+	\frametitle{Proverif}
+	\begin{itemize}
+		\item Symbolic verification tool:\pause
+		      \begin{itemize}
+			      \item{Attacker $\to$ Dolev-Yao;}\pause
+			      \item{Messages $\to$ terms;}\pause
+			      \item{Cryptographic primitives $\to$ black-box;}\pause
+			      \item{\myhl{Perfect cryptography} assumption. \pause Suppose we have:
+			                  \begin{itemize}
+				                  \item{Two primitives: $\mbox{enc}$, $\mbox{dec}$;}
+				                  \item{Two terms: $m$, $k$;}
+				                  \item{The following equality:
+				                              \begin{equation}
+					                              \mbox{dec}\left(\mbox{enc}\left(m, k\right), k\right) = m
+				                              \end{equation}
+				                        }
+				                  \pause
+				                  \item can decrypt $\mbox{enc}\left(m, k\right) \Longleftrightarrow k$ is known
+
+			                  \end{itemize}
+			            }\pause
+		      \end{itemize}
+		\item Based on \myhl{applied \textpi-calculus};
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Proverif - Applied \picnospace}
+	Grammar of processes ($P$, $Q$):\pause
+	\begin{lstlisting}
+0                    (* null process *)|*\pause*|
+out(N, M); P         (* output to channel N the message M *)
+in(N, M: T); P       (* input from channel N of message M *)|*\pause*|
+P | Q                (* parallel composition *)
+!P                   (* infinite replication *)|*\pause*|
+new a: T; P          (* fresh value of sort T *)
+if M then P else Q   (* conditional *)
+  \end{lstlisting}
+
+	\pause
+	Additionally:
+	\begin{lstlisting}
+event EventName(x);        (* add event to trace *)
+query event(EventName(x)). (* define a query on events *)	|*\pause*|
+let macroName = P.         (* create a process macro *)
+let x = M in P else Q.     (* assignment and pattern matching *)|*\pause*|
+phase t;                   (* execute a process in phase t *)
+  \end{lstlisting}
+\end{frame}
+
+
+\section{5G EAP-TLS authentication protocol}
+\begin{frame}
+	\frametitle{5G EAP-TLS protocol entities}
+
+	Involved entities:
+	\begin{itemize}
+		\item User Equipment (UE):
+		      \begin{itemize}
+			      \item Subscription Permanent Identifier (\myhl{SUPI})
+			      \item Public asymmetric key $pk_{HN}$
+		      \end{itemize} \pause
+		\item Home Network (HN):
+		      \begin{itemize}
+			      \item Authentication Server Function (\myhl{AUSF})
+			      \item Unified Data Management (\myhl{UDM})
+		      \end{itemize} \pause
+		\item Serving Network (SN):
+		      \begin{itemize}
+			      \item Security Anchor Function (\myhl{SEAF})
+		      \end{itemize} \pause
+	\end{itemize}
+
+	Assumptions:
+	\begin{itemize}
+		\item HN $\leftrightarrow$ SN communications are secure
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+	\frametitle{5G EAP-TLS protocol execution I}
+	\nologo
+
+	\Wider[4cm]{
+		\begin{figure}[t]
+			{\setmscoptions
+				\setmscscale{0.65}
+				\begin{msc}{}
+					\declinst{ue}{}{UE}
+					\declinst{seaf}{}{SEAF}
+					\declinst{ausf}{}{AUSF}
+					\declinst{udm}{}{UDM}
+
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{seaf}
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}, SEAFN$}{seaf}{ausf}
+					\nextlevel
+					\myaction{Check SEAFN}{ausf}
+
+					\nextlevel[7]
+					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}, SEAFN$}{ausf}{udm}
+					\nextlevel
+					\myaction{Check SUPI}{udm}
+					\nextlevel[6]
+					\mymess{$SUPI, INDICATOR(EAP\_TLS)$}{udm}{ausf}
+					\mymess{$TLS\_START$}{ausf}{seaf}
+					\mymess{$TLS\_START$}{seaf}{ue}
+					\nextlevel[3]
+					\mymess{$R_{UE1}, Methods\_UE$}{ue}{seaf}
+					\mymess{$R_{UE1}, Methods\_UE$}{seaf}{ausf}
+					\nextlevel[6]
+					\mymess{\parbox{3.5cm}{\centering$R_{AUSF}, Certificate\_AUSF,$\\$Methods\_AUSF$}}{ausf}{seaf}
+					\mymess{\parbox{3.5cm}{\centering$R_{AUSF}, Certificate\_AUSF,$\\$Methods\_AUSF$}}{seaf}{ue}
+					\nextlevel
+					\myaction{\parbox{5cm}{\raggedright
+							Validate $Certificate\_AUSF$ \\
+							Derive $K_{session}$ from $R_{UE1}, R_{prekey}, R_{AUSF}$ \\
+							Compute $\hash{handshake\_UE}$
+						}}{ue}
+					\nextlevel[15]
+					\mymess{\parbox{3.5cm}{\centering
+							$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE$ \\
+							$\enc{\hash{handshake\_UE}}{ssk_{UE}}$ \\
+							$\enc{\hash{handshake\_UE}}{K_{session}}$
+						}}{ue}{seaf}
+					\mymess{\parbox{3.5cm}{\centering
+							$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE$ \\
+							$\enc{\hash{handshake\_UE}}{ssk_{UE}}$ \\
+							$\enc{\hash{handshake\_UE}}{K_{session}}$
+						}}{seaf}{ausf}
+					\nextlevel[50]
+				\end{msc}
+			}
+		\end{figure}
+	}
+\end{frame}
+
+\begin{frame}[fragile]
+	\frametitle{5G EAP-TLS protocol execution II}
+	\Wider[4cm]{
+		\begin{figure}[t]
+			{\setmscoptions
+				\setmscscale{0.65}
+				\begin{msc}{}
+					\declinst{ue}{}{UE}
+					\declinst{seaf}{}{SEAF}
+					\declinst{ausf}{}{AUSF}
+					\declinst{udm}{}{UDM}
+
+					\myaction{\parbox{5cm}{\raggedright
+							Validate $Certificate\_UE$\\
+							Derive $K_{session}$ from $R_{UE1}, R_{prekey}, R_{AUSF}$ \\
+							Check $\hash{handshake\_AUSF} = \hash{handshake\_UE}$
+						}}{ausf}
+
+					\nextlevel[13]
+					\mymess{$\enc{\hash{handshake\_AUSF}}{K_{session}}$}{ausf}{seaf}
+					\mymess{$\enc{\hash{handshake\_AUSF}}{K_{session}}$}{seaf}{ue}
+					\nextlevel
+					\myaction{\parbox{5cm}{\raggedright Check $\hash{handshake\_AUSF} = \hash{handshake\_UE}$}}{ue}
+					\nextlevel[8]
+					\mymess{$EAP\_TLS$}{ue}{seaf}
+					\mymess{$EAP\_TLS$}{seaf}{ausf}
+					\nextlevel
+					\myaction{Derive $K_{seaf}$ from $R_{prekey}$}{ausf}
+					\nextlevel[7]
+					\mymess{$Success, SUPI, K_{seaf}$}{ausf}{seaf}
+					\mymess{$Success$}{seaf}{ue}
+					\nextlevel
+					\myaction{Derive $K_{seaf}$ from $R_{prekey}$}{ue}
+					\nextlevel[5]
+					\condition{\footnotesize Exchange cryptographic messages with $K_{seaf}$}{ue,seaf}
+					\nextlevel[5]
+				\end{msc}
+			}
+		\end{figure}
+	}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Required security properties}
+
+	\pause
+	\begin{itemize}
+		\item \textbf{Authentication properties}:
+		      \begin{enumerate}
+			      \item[A1.] Both the home network and the subscriber should agree on the identity of each other after successful termination
+			      \item[A2.] Both the home network and the subscriber should agree on the pre-master key $R_{prekey}$ after successful termination
+		      \end{enumerate}\pause
+		\item \textbf{Secrecy properties}:
+		      \begin{enumerate}
+			      \item[S1.] The attacker cannot obtain the identity $SUPI$ of an honest subscriber
+			      \item[S2.] The attacker cannot obtain the pre-master key $R_{prekey}$ of an honest subscriber
+			      \item[S3.] The attacker cannot obtain the session key $K_{session}$ of an honest subscriber
+		      \end{enumerate}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+	\centering\huge
+	It's \textbf{\itshape\scshape DEMO} time!!
+\end{frame}
+
+\section{The counterexamples}
+\begin{frame}
+	\frametitle{Broken properties}
+
+	\begin{itemize}
+		\item \textbf{Authentication properties}:
+		      \begin{enumerate}
+			      \item[\color{red}A1.] {\color{red}Both the home network and the subscriber should agree on the identity of each other after successful termination}
+			      \item[\color{red}A2.] {\color{red}Both the home network and the subscriber should agree on the pre-master key $R_{prekey}$ after successful termination}
+		      \end{enumerate}
+		\item \textbf{Secrecy properties}:
+		      \begin{enumerate}
+			      \item[\color{Green}S1.] {\color{Green}The attacker cannot obtain the identity $SUPI$ of an honest subscriber}
+			      \item[\color{Green}S2.] {\color{Green}The attacker cannot obtain the pre-master key $R_{prekey}$ of an honest subscriber}
+			      \item[\color{Green}S3.] {\color{Green}The attacker cannot obtain the session key $K_{session}$ of an honest subscriber}
+		      \end{enumerate}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+	\frametitle{Counterexample for property A1}
+	\begin{figure}[t]
+		{
+			\setmscoptions
+			\setlength{\instdist}{6cm}
+			\setmscscale{0.65}
+
+			\begin{msc}{}
+				\declinst{ue}{}{UE}
+				\declinst{atk}{}{Attacker}
+
+				\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{atk}
+				\nextlevel[3]
+				\mymess{$\textcolor{red}{START^*}$}{atk}{ue}
+				\nextlevel[3]
+				\mymess{$R_{UE1}$}{ue}{atk}
+				\nextlevel[3]
+				\mymess{$\textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF$}{atk}{ue}
+				\nextlevel[9]
+				\mess[text width=7cm,align=center]{\footnotesize
+					$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE,$
+					$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{ssk_{UE}},$
+					$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{\hash{R_{UE1}, \textcolor{red}{R_{AUSF}^*}, R_{prekey}}}$
+				}{ue}{atk}
+				\nextlevel[6]
+				\mymess{$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{\hash{R_{UE1}, \textcolor{red}{R_{AUSF}^*}, R_{prekey}}}$}{atk}{ue}
+			\end{msc}
+		}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Counterexample for property A2}
+\end{frame}
+
+\end{document}
