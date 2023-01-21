@@ -36,12 +36,10 @@
 \newcommand{\kdf}[1]{\ensuremath{\func{kdf}{#1}}}
 \newcommand{\fpk}[1]{\ensuremath{\func{fpk}{#1}}}
 \newcommand{\hash}[1]{\ensuremath{\func{h}{#1}}}
-\newcommand{\modexp}[3]{\ensuremath{#1^#2 \mod{#3}}}
-\newcommand{\key}[1]{\ensuremath{k_{#1}}}
-\newcommand{\pkey}[1]{\ensuremath{pk_{#1}}}
-\newcommand{\skey}[1]{\ensuremath{sk_{#1}}}
-\newcommand{\newkey}[1]{\ensuremath{k'_{#1}}}
-\newcommand{\group}[1]{\ensuremath{\Z_{#1}}}
+\newcommand{\key}[1]{\ensuremath{K_{#1}}}
+\newcommand{\nonce}[1]{\ensuremath{R_{#1}}}
+\newcommand{\cert}[1]{\ensuremath{CERT_{#1}}}
+\newcommand{\hs}[1]{\ensuremath{HS_{#1}}}
 
 % Simple highlighting
 \newcommand<>{\myhl}[1]{\alert#2{\hl#2{#1}}}
@@ -183,25 +181,24 @@ phase t;                   (* execute a process in phase t *)
 
 \begin{frame}[fragile]
 	\frametitle{5G EAP-TLS protocol execution I}
-	\nologo
-
+	\vspace*{-0.5cm}
 	\Wider[4cm]{
 		\begin{figure}[t]
 			{\setmscoptions
-				\setmscscale{0.65}
+				\setmscscale{0.7}
 				\begin{msc}{}
 					\declinst{ue}{}{UE}
 					\declinst{seaf}{}{SEAF}
 					\declinst{ausf}{}{AUSF}
 					\declinst{udm}{}{UDM}
 
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{seaf}
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}, SEAFN$}{seaf}{ausf}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}$}{ue}{seaf}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}, SEAFN$}{seaf}{ausf}
 					\nextlevel
 					\myaction{Check SEAFN}{ausf}
 
 					\nextlevel[7]
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}, SEAFN$}{ausf}{udm}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}, SEAFN$}{ausf}{udm}
 					\nextlevel
 					\myaction{Check SUPI}{udm}
 					\nextlevel[6]
@@ -209,27 +206,27 @@ phase t;                   (* execute a process in phase t *)
 					\mymess{$TLS\_START$}{ausf}{seaf}
 					\mymess{$TLS\_START$}{seaf}{ue}
 					\nextlevel[3]
-					\mymess{$R_{UE1}, Methods\_UE$}{ue}{seaf}
-					\mymess{$R_{UE1}, Methods\_UE$}{seaf}{ausf}
+					\stop*{udm}
+					\mymess{$\nonce{UE1}, Methods\_UE$}{ue}{seaf}
+					\mymess{$\nonce{UE1}, Methods\_UE$}{seaf}{ausf}
 					\nextlevel[6]
-					\mymess{\parbox{3.5cm}{\centering$R_{AUSF}, Certificate\_AUSF,$\\$Methods\_AUSF$}}{ausf}{seaf}
-					\mymess{\parbox{3.5cm}{\centering$R_{AUSF}, Certificate\_AUSF,$\\$Methods\_AUSF$}}{seaf}{ue}
+					\mymess{\parbox{3.5cm}{\centering$\nonce{AUSF}, \cert{AUSF},$\\$Methods\_AUSF$}}{ausf}{seaf}
+					\mymess{\parbox{3.5cm}{\centering$\nonce{AUSF}, \cert{AUSF},$\\$Methods\_AUSF$}}{seaf}{ue}
 					\nextlevel
-					\myaction{\parbox{5cm}{\raggedright
-							Validate $Certificate\_AUSF$ \\
-							Derive $K_{session}$ from $R_{UE1}, R_{prekey}, R_{AUSF}$ \\
-							Compute $\hash{handshake\_UE}$
+					\myaction{\parbox{3cm}{\raggedright
+							Validate $\cert{AUSF}$ \\
+							Derive $\key{session}$ from $\nonce{UE1},$\\
+							$\nonce{prekey}, \nonce{AUSF}$ \\
+							Compute $\hash{\hs{UE}}$
 						}}{ue}
 					\nextlevel[15]
 					\mymess{\parbox{3.5cm}{\centering
-							$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE$ \\
-							$\enc{\hash{handshake\_UE}}{ssk_{UE}}$ \\
-							$\enc{\hash{handshake\_UE}}{K_{session}}$
+							$\enc{\nonce{prekey}}{pk_{AUSF}}, \enc{\hash{\hs{UE}}}{ssk_{UE}},$ \\
+							$\enc{\hash{\hs{UE}}}{\key{session}}, \cert{UE}$
 						}}{ue}{seaf}
 					\mymess{\parbox{3.5cm}{\centering
-							$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE$ \\
-							$\enc{\hash{handshake\_UE}}{ssk_{UE}}$ \\
-							$\enc{\hash{handshake\_UE}}{K_{session}}$
+							$\enc{\nonce{prekey}}{pk_{AUSF}}, \enc{\hash{\hs{UE}}}{ssk_{UE}},$ \\
+							$\enc{\hash{\hs{UE}}}{\key{session}}, \cert{UE}$
 						}}{seaf}{ausf}
 					\nextlevel[50]
 				\end{msc}
@@ -240,39 +237,39 @@ phase t;                   (* execute a process in phase t *)
 
 \begin{frame}[fragile]
 	\frametitle{5G EAP-TLS protocol execution II}
+	\vspace*{-0.5cm}
 	\Wider[4cm]{
 		\begin{figure}[t]
 			{\setmscoptions
-				\setmscscale{0.65}
+				\setmscscale{0.7}
 				\begin{msc}{}
 					\declinst{ue}{}{UE}
 					\declinst{seaf}{}{SEAF}
 					\declinst{ausf}{}{AUSF}
-					\declinst{udm}{}{UDM}
 
 					\myaction{\parbox{5cm}{\raggedright
-							Validate $Certificate\_UE$\\
-							Derive $K_{session}$ from $R_{UE1}, R_{prekey}, R_{AUSF}$ \\
-							Check $\hash{handshake\_AUSF} = \hash{handshake\_UE}$
+							Validate $\cert{UE}$\\
+							Derive $\key{session}$ from $\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}$\\
+							Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$
 						}}{ausf}
 
 					\nextlevel[13]
-					\mymess{$\enc{\hash{handshake\_AUSF}}{K_{session}}$}{ausf}{seaf}
-					\mymess{$\enc{\hash{handshake\_AUSF}}{K_{session}}$}{seaf}{ue}
+					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{ausf}{seaf}
+					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{seaf}{ue}
 					\nextlevel
-					\myaction{\parbox{5cm}{\raggedright Check $\hash{handshake\_AUSF} = \hash{handshake\_UE}$}}{ue}
+					\myaction{\parbox{4.5cm}{\centering Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$}}{ue}
 					\nextlevel[8]
 					\mymess{$EAP\_TLS$}{ue}{seaf}
 					\mymess{$EAP\_TLS$}{seaf}{ausf}
 					\nextlevel
-					\myaction{Derive $K_{seaf}$ from $R_{prekey}$}{ausf}
+					\myaction{Derive $\key{seaf}$ from $\nonce{prekey}$}{ausf}
 					\nextlevel[7]
-					\mymess{$Success, SUPI, K_{seaf}$}{ausf}{seaf}
+					\mymess{$Success, SUPI, \key{seaf}$}{ausf}{seaf}
 					\mymess{$Success$}{seaf}{ue}
 					\nextlevel
-					\myaction{Derive $K_{seaf}$ from $R_{prekey}$}{ue}
+					\myaction{Derive $\key{seaf}$ from $\nonce{prekey}$}{ue}
 					\nextlevel[5]
-					\condition{\footnotesize Exchange cryptographic messages with $K_{seaf}$}{ue,seaf}
+					\condition{\footnotesize Exchange cryptographic messages with $\key{seaf}$}{ue,seaf}
 					\nextlevel[5]
 				\end{msc}
 			}
@@ -288,17 +285,18 @@ phase t;                   (* execute a process in phase t *)
 		\item \textbf{Authentication properties}:
 		      \begin{enumerate}
 			      \item[A1.] Both the home network and the subscriber should agree on the identity of each other after successful termination
-			      \item[A2.] Both the home network and the subscriber should agree on the pre-master key $R_{prekey}$ after successful termination
+			      \item[A2.] Both the home network and the subscriber should agree on the pre-master key $\nonce{prekey}$ after successful termination
 		      \end{enumerate}\pause
 		\item \textbf{Secrecy properties}:
 		      \begin{enumerate}
 			      \item[S1.] The attacker cannot obtain the identity $SUPI$ of an honest subscriber
-			      \item[S2.] The attacker cannot obtain the pre-master key $R_{prekey}$ of an honest subscriber
-			      \item[S3.] The attacker cannot obtain the session key $K_{session}$ of an honest subscriber
+			      \item[S2.] The attacker cannot obtain the pre-master key $\nonce{prekey}$ of an honest subscriber
+			      \item[S3.] The attacker cannot obtain the session key $\key{session}$ of an honest subscriber
 		      \end{enumerate}
 	\end{itemize}
 \end{frame}
 
+\section{Demo}
 \begin{frame}[standout]
 	\centering\huge
 	It's \textbf{\itshape\scshape DEMO} time!!
@@ -312,13 +310,13 @@ phase t;                   (* execute a process in phase t *)
 		\item \textbf{Authentication properties}:
 		      \begin{enumerate}
 			      \item[\color{red}A1.] {\color{red}Both the home network and the subscriber should agree on the identity of each other after successful termination}
-			      \item[\color{red}A2.] {\color{red}Both the home network and the subscriber should agree on the pre-master key $R_{prekey}$ after successful termination}
+			      \item[\color{red}A2.] {\color{red}Both the home network and the subscriber should agree on the pre-master key $\nonce{prekey}$ after successful termination}
 		      \end{enumerate}
 		\item \textbf{Secrecy properties}:
 		      \begin{enumerate}
 			      \item[\color{Green}S1.] {\color{Green}The attacker cannot obtain the identity $SUPI$ of an honest subscriber}
-			      \item[\color{Green}S2.] {\color{Green}The attacker cannot obtain the pre-master key $R_{prekey}$ of an honest subscriber}
-			      \item[\color{Green}S3.] {\color{Green}The attacker cannot obtain the session key $K_{session}$ of an honest subscriber}
+			      \item[\color{Green}S2.] {\color{Green}The attacker cannot obtain the pre-master key $\nonce{prekey}$ of an honest subscriber}
+			      \item[\color{Green}S3.] {\color{Green}The attacker cannot obtain the session key $\key{session}$ of an honest subscriber}
 		      \end{enumerate}
 	\end{itemize}
 \end{frame}
@@ -329,27 +327,27 @@ phase t;                   (* execute a process in phase t *)
 		{
 			\setmscoptions
 			\setlength{\instdist}{4.5cm}
-			\setmscscale{0.8}
+			\setmscscale{0.75}
 
 			\begin{msc}{}
 				\declinst{ue}{}{UE}
 				\declinst{atk}{}{Attacker}
 
-				\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{atk}
+				\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}$}{ue}{atk}
 				\nextlevel[3]
 				\mymess{$\textcolor{red}{START^*}$}{atk}{ue}
 				\nextlevel[3]
-				\mymess{$R_{UE1}$}{ue}{atk}
+				\mymess{$\nonce{UE1}$}{ue}{atk}
 				\nextlevel[3]
-				\mymess{$\textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF$}{atk}{ue}
+				\mymess{$\textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}$}{atk}{ue}
 				\nextlevel[9]
 				\mess[text width=7cm,align=center]{\footnotesize
-					$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE,$
-					$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{ssk_{UE}},$
-					$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{\hash{R_{UE1}, \textcolor{red}{R_{AUSF}^*}, R_{prekey}}}$
+					$\enc{\nonce{prekey}}{pk_{AUSF}}, \cert{UE},$
+					$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{ssk_{UE}},$
+					$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$
 				}{ue}{atk}
-				\nextlevel[6]
-				\mymess{$\enc{\textcolor{red}{START^*}, R_{UE1}, \textcolor{red}{R_{AUSF}^*}, Certificate\_AUSF}{\hash{R_{UE1}, \textcolor{red}{R_{AUSF}^*}, R_{prekey}}}$}{atk}{ue}
+				\nextlevel[5]
+				\mymess{$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$}{atk}{ue}
 				\nextlevel
 				\myaction{event $termUE$}{ue}
 				\nextlevel[2]
@@ -364,41 +362,41 @@ phase t;                   (* execute a process in phase t *)
 		\begin{figure}[t]
 			{
 				\setmscoptions
-				\setlength{\instdist}{4cm}
-				\setmscscale{0.65}
+				\setlength{\instdist}{3.5cm}
+				\setmscscale{0.7}
 
 				\begin{msc}{}
 					\declinst{ue}{}{UE}
 					\declinst{atk}{}{Attacker}
 					\declinst{ausf}{}{AUSF}
 
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{atk}
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{atk}{ausf}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}$}{ue}{atk}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}$}{atk}{ausf}
 					\nextlevel[3]
 					\mymess{$START$}{ausf}{atk}
 					\mymess{$START$}{atk}{ue}
 					\nextlevel[3]
-					\mymess{$R_{UE1}$}{ue}{atk}
-					\mymess{$R_{UE1}$}{atk}{ausf}
+					\mymess{$\nonce{UE1}$}{ue}{atk}
+					\mymess{$\nonce{UE1}$}{atk}{ausf}
 					\nextlevel[3]
-					\mymess{$R_{AUSF}, Certificate\_AUSF$}{ausf}{atk}
-					\mymess{$R_{AUSF}, Certificate\_AUSF$}{atk}{ue}
+					\mymess{$\nonce{AUSF}, \cert{AUSF}$}{ausf}{atk}
+					\mymess{$\nonce{AUSF}, \cert{AUSF}$}{atk}{ue}
 					\nextlevel
-					\myaction{event $sendPrek(R_{prekey})$}{ue}
-					\nextlevel[15]
+					\myaction{event $sendPrek(\nonce{prekey})$}{ue}
+					\nextlevel[10]
 					\mess[text width=7cm,align=center]{\footnotesize
-						$\enc{R_{prekey}}{pk_{AUSF}}, Certificate\_UE,$
-						$\enc{handshake\_UE}{ssk_{UE}}$
-						$\enc{handshake\_UE}{\hash{R_{UE1}, R_{AUSF}, R_{prekey}}}$
+						$\enc{\nonce{prekey}}{pk_{AUSF}}, \cert{UE},$
+						$\enc{\hs{UE}}{ssk_{UE}}$
+						$\enc{\hs{UE}}{\hash{\nonce{UE1}, \nonce{AUSF}, \nonce{prekey}}}$
 					}{ue}{atk}
 					\mess[text width=7cm,align=center]{\footnotesize
-						$\enc{\textcolor{red}{R_{prekey}^*}}{pk_{AUSF}}, Certificate\_UE,$
-						$\enc{handshake\_UE}{ssk_{UE}}$
-						$\enc{handshake\_UE}{\hash{R_{UE1}, R_{AUSF}, \textcolor{red}{R_{prekey}^*}}}$
+						$\enc{\textcolor{red}{\nonce{prekey}^*}}{pk_{AUSF}}, \cert{UE},$
+						$\enc{\hs{UE}}{ssk_{UE}}$
+						$\enc{\hs{UE}}{\hash{\nonce{UE1}, \nonce{AUSF}, \textcolor{red}{\nonce{prekey}^*}}}$
 					}{atk}{ausf}
 
 					\nextlevel
-					\myaction{\textcolor{red}{event $acceptPrek(R_{prekey}^*)$}}{ausf}
+					\myaction{\textcolor{red}{event $acceptPrek(\nonce{prekey}^*)$}}{ausf}
 					\nextlevel[3]
 				\end{msc}
 			}
@@ -413,28 +411,26 @@ phase t;                   (* execute a process in phase t *)
 		\begin{figure}[t]
 			{
 				\setmscoptions
-				\setlength{\instdist}{4cm}
-				\setmscscale{0.8}
+				\setlength{\instdist}{4.5cm}
+				\setmscscale{0.75}
 
 				\begin{msc}{}
 					\declinst{ue}{}{UE}
 					\declinst{ausf}{}{AUSF}
 
-					\mymess{$\enc{SUPI, R_{UE}}{pk_{UDM}}$}{ue}{ausf}
+					\mymess{$\enc{SUPI, \nonce{UE}}{pk_{UDM}}$}{ue}{ausf}
 					\nextlevel[4]
-					\mymess{$\enc{START, \textcolor{red}{R_{UE}}}{\textcolor{red}{pk_{UE}}}$}{ausf}{ue}
+					\mymess{$\enc{START, \textcolor{red}{\nonce{UE}}}{\textcolor{red}{pk_{UE}}}$}{ausf}{ue}
 					\nextlevel[4]
-					\mymess{$\enc{R_{UE1}, \textcolor{red}{START}}{\textcolor{red}{pk_{AUSF}}}$}{ue}{ausf}
+					\mymess{$\enc{\nonce{UE1}, \textcolor{red}{START}}{\textcolor{red}{pk_{AUSF}}}$}{ue}{ausf}
 					\nextlevel[4]
-					\mymess{$\enc{R_{AUSF}, \textcolor{red}{R_{UE1}}}{\textcolor{red}{pk_{UE}}}, Certificate\_AUSF$}{ausf}{ue}
+					\mymess{$\enc{\nonce{AUSF}, \textcolor{red}{\nonce{UE1}}}{\textcolor{red}{pk_{UE}}}, \cert{AUSF}$}{ausf}{ue}
 					\nextlevel[6]
-					\mess[text width=7cm,align=center]{\footnotesize
-						$\enc{R_{prekey}, \textcolor{red}{R_{UE}}}{pk_{AUSF}}, Certificate\_UE, $
-						$\enc{handshake\_UE}{ssk_{UE}}, $
-						$\enc{handshake\_UE}{K_{session}}$
+					\mymess{
+						$\enc{\nonce{prekey}, \textcolor{red}{\nonce{UE}}}{pk_{AUSF}}, \cert{UE}, \enc{\hs{UE}}{ssk_{UE}}, \enc{\hs{UE}}{\key{session}}$
 					}{ue}{ausf}
 					\nextlevel[4]
-					\mymess{$\enc{handshake\_AUSF, \textcolor{red}{SUPI}}{K_{session}}$}{ausf}{ue}
+					\mymess{$\enc{\hs{AUSF}, \textcolor{red}{SUPI}}{\key{session}}$}{ausf}{ue}
 				\end{msc}
 			}
 		\end{figure}
