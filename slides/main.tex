@@ -32,6 +32,7 @@
 % Cryptographic primitives
 \newcommand{\func}[2]{\ensuremath{\mbox{#1}\left(#2\right)}}
 \newcommand{\enc}[2]{\ensuremath{\left\{#1\right\}_{#2}}}
+\newcommand{\sign}[2]{\ensuremath{\left\{#1\right\}_{#2}}}
 \newcommand{\sha}[2]{\ensuremath{\func{sha#1}{#2}}}
 \newcommand{\kdf}[1]{\ensuremath{\func{kdf}{#1}}}
 \newcommand{\fpk}[1]{\ensuremath{\func{fpk}{#1}}}
@@ -106,66 +107,74 @@
 		\item Symbolic verification tool:\pause
 		      \begin{itemize}
 			      \item{Attacker $\to$ Dolev-Yao;}\pause
-			      \item{Messages $\to$ terms;}\pause
+			      % \item{Messages $\to$ terms;}\pause
 			      \item{Cryptographic primitives $\to$ black-box;}\pause
-			      \item{\myhl{Perfect cryptography} assumption. \pause Suppose we have:
+			      \item{\myhl{Perfect cryptography} assumption:\pause
 			                  \begin{itemize}
-				                  \item{Two primitives: $\mbox{enc}$, $\mbox{dec}$;}
-				                  \item{Two terms: $m$, $k$;}
-				                  \item{The following equality:
-				                              \begin{equation}
-					                              \mbox{dec}\left(\mbox{enc}\left(m, k\right), k\right) = m
-				                              \end{equation}
-				                        }
-				                  \pause
-				                  \item can decrypt $\mbox{enc}\left(m, k\right) \Longleftrightarrow k$ is known
-
+				                  \item e.g. can decrypt $\func{enc}{m, k} \Longleftrightarrow k$ is known
 			                  \end{itemize}
+			                  % \pause Suppose we have:
+			                  % \begin{itemize}
+			                  %  \item{Two primitives: $\mbox{enc}$, $\mbox{dec}$;}
+			                  %  \item{Two terms: $m$, $k$;}
+			                  %  \item{The following equality:
+			                  %              \begin{equation}
+			                  %               \mbox{dec}\left(\mbox{enc}\left(m, k\right), k\right) = m
+			                  %              \end{equation}
+			                  %        }
+			                  %  \pause
+			                  %  \item can decrypt $\mbox{enc}\left(m, k\right) \Longleftrightarrow k$ is known
+			                  %
+			                  % \end{itemize}
 			            }\pause
 		      \end{itemize}
 		\item Based on \myhl{applied \textpi-calculus};
 	\end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Applied \picnospace}
-	Grammar of processes ($P$, $Q$):\pause
-	\begin{lstlisting}
-0                    (* null process *)|*\pause*|
-out(N, M); P         (* output to channel N the message M *)
-in(N, M: T); P       (* input from channel N of message M *)|*\pause*|
-P | Q                (* parallel composition *)
-!P                   (* infinite replication *)|*\pause*|
-new a: T; P          (* fresh value of sort T *)
-if M then P else Q   (* conditional *)
-  \end{lstlisting}
-
-	\pause
-	Additionally:
-	\begin{lstlisting}
-event EventName(x);        (* add event to trace *)
-query event(EventName(x)). (* define a query on events *)	|*\pause*|
-let macroName = P.         (* create a process macro *)
-let x = M in P else Q.     (* assignment and pattern matching *)|*\pause*|
-phase t;                   (* execute a process in phase t *)
-  \end{lstlisting}
-\end{frame}
+% \begin{frame}[fragile]{Applied \picnospace}
+% 	Grammar of processes ($P$, $Q$):\pause
+% 	\begin{lstlisting}
+% 0                    (* null process *)|*\pause*|
+% out(N, M); P         (* output to channel N the message M *)
+% in(N, M: T); P       (* input from channel N of message M *)|*\pause*|
+% P | Q                (* parallel composition *)
+% !P                   (* infinite replication *)|*\pause*|
+% new a: T; P          (* fresh value of sort T *)
+% if M then P else Q   (* conditional *)
+%   \end{lstlisting}
+%
+% 	\pause
+% 	Additionally:
+% 	\begin{lstlisting}
+% event EventName(x);        (* add event to trace *)
+% query event(EventName(x)). (* define a query on events *)	|*\pause*|
+% let macroName = P.         (* create a process macro *)
+% let x = M in P else Q.     (* assignment and pattern matching *)|*\pause*|
+% phase t;                   (* execute a process in phase t *)
+%   \end{lstlisting}
+% \end{frame}
 
 
 \section{5G EAP-TLS authentication protocol}
 \begin{frame}
 	\frametitle{5G EAP-TLS protocol entities}
 
-	Involved entities:
+	Involved entities:\pause
 	\begin{itemize}
-		\item User Equipment (UE):
-		      \begin{itemize}
-			      \item Subscription Permanent Identifier (\myhl{SUPI})
-			      \item Public asymmetric key $pk_{HN}$
-		      \end{itemize} \pause
 		\item Home Network (HN):
 		      \begin{itemize}
 			      \item Authentication Server Function (\myhl{AUSF})
+			            \begin{itemize}
+				            \item Certificate $\cert{AUSF}$
+			            \end{itemize}
 			      \item Unified Data Management (\myhl{UDM})
+		      \end{itemize} \pause
+		\item User Equipment (UE):
+		      \begin{itemize}
+			      \item Subscription Permanent Identifier (\myhl{SUPI})
+			      \item Public asymmetric keys $pk_{AUSF}, pk_{UDM}$
+			      \item Certificate $\cert{UE}$
 		      \end{itemize} \pause
 		\item Serving Network (SN):
 		      \begin{itemize}
@@ -215,17 +224,16 @@ phase t;                   (* execute a process in phase t *)
 					\nextlevel
 					\myaction{\parbox{3cm}{\raggedright
 							Validate $\cert{AUSF}$ \\
-							Derive $\key{session}$ from $\nonce{UE1},$\\
-							$\nonce{prekey}, \nonce{AUSF}$ \\
+							Derive $\key{session} = \hash{\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}}$ \\
 							Compute $\hash{\hs{UE}}$
 						}}{ue}
 					\nextlevel[15]
 					\mymess{\parbox{3.5cm}{\centering
-							$\enc{\nonce{prekey}}{pk_{AUSF}}, \enc{\hash{\hs{UE}}}{ssk_{UE}},$ \\
+							$\enc{\nonce{prekey}}{pk_{AUSF}}, \sign{\hash{\hs{UE}}}{ssk_{UE}},$ \\
 							$\enc{\hash{\hs{UE}}}{\key{session}}, \cert{UE}$
 						}}{ue}{seaf}
 					\mymess{\parbox{3.5cm}{\centering
-							$\enc{\nonce{prekey}}{pk_{AUSF}}, \enc{\hash{\hs{UE}}}{ssk_{UE}},$ \\
+							$\enc{\nonce{prekey}}{pk_{AUSF}}, \sign{\hash{\hs{UE}}}{ssk_{UE}},$ \\
 							$\enc{\hash{\hs{UE}}}{\key{session}}, \cert{UE}$
 						}}{seaf}{ausf}
 					\nextlevel[50]
@@ -249,11 +257,11 @@ phase t;                   (* execute a process in phase t *)
 
 					\myaction{\parbox{5cm}{\raggedright
 							Validate $\cert{UE}$\\
-							Derive $\key{session}$ from $\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}$\\
+							Derive $\key{session} = \hash{\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}}$\\
 							Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$
 						}}{ausf}
 
-					\nextlevel[13]
+					\nextlevel[11]
 					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{ausf}{seaf}
 					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{seaf}{ue}
 					\nextlevel
@@ -302,7 +310,7 @@ phase t;                   (* execute a process in phase t *)
 	It's \textbf{\itshape\scshape DEMO} time!!
 \end{frame}
 
-\section{The counterexamples}
+\section{Counterexamples}
 \begin{frame}
 	\frametitle{Broken properties}
 
@@ -343,7 +351,7 @@ phase t;                   (* execute a process in phase t *)
 				\nextlevel[9]
 				\mess[text width=7cm,align=center]{\footnotesize
 					$\enc{\nonce{prekey}}{pk_{AUSF}}, \cert{UE},$
-					$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{ssk_{UE}},$
+					$\sign{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{ssk_{UE}},$
 					$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$
 				}{ue}{atk}
 				\nextlevel[5]
@@ -386,12 +394,12 @@ phase t;                   (* execute a process in phase t *)
 					\nextlevel[10]
 					\mess[text width=7cm,align=center]{\footnotesize
 						$\enc{\nonce{prekey}}{pk_{AUSF}}, \cert{UE},$
-						$\enc{\hs{UE}}{ssk_{UE}}$
+						$\sign{\hs{UE}}{ssk_{UE}}$
 						$\enc{\hs{UE}}{\hash{\nonce{UE1}, \nonce{AUSF}, \nonce{prekey}}}$
 					}{ue}{atk}
 					\mess[text width=7cm,align=center]{\footnotesize
 						$\enc{\textcolor{red}{\nonce{prekey}^*}}{pk_{AUSF}}, \cert{UE},$
-						$\enc{\hs{UE}}{ssk_{UE}}$
+						$\sign{\hs{UE}}{ssk_{UE}}$
 						$\enc{\hs{UE}}{\hash{\nonce{UE1}, \nonce{AUSF}, \textcolor{red}{\nonce{prekey}^*}}}$
 					}{atk}{ausf}
 
@@ -427,7 +435,7 @@ phase t;                   (* execute a process in phase t *)
 					\mymess{$\enc{\nonce{AUSF}, \textcolor{red}{\nonce{UE1}}}{\textcolor{red}{pk_{UE}}}, \cert{AUSF}$}{ausf}{ue}
 					\nextlevel[6]
 					\mymess{
-						$\enc{\nonce{prekey}, \textcolor{red}{\nonce{UE}}}{pk_{AUSF}}, \cert{UE}, \enc{\hs{UE}}{ssk_{UE}}, \enc{\hs{UE}}{\key{session}}$
+						$\sign{\nonce{prekey}, \textcolor{red}{\nonce{UE}}}{pk_{AUSF}}, \cert{UE}, \enc{\hs{UE}}{ssk_{UE}}, \enc{\hs{UE}}{\key{session}}$
 					}{ue}{ausf}
 					\nextlevel[4]
 					\mymess{$\enc{\hs{AUSF}, \textcolor{red}{SUPI}}{\key{session}}$}{ausf}{ue}
