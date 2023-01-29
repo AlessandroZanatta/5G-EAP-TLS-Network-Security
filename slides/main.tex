@@ -18,7 +18,7 @@
 \title{Formal verification of the 5G EAP-TLS authentication protocol using Proverif}
 \author{Alessandro Zanatta}
 \institute{University of Pisa\newline\newline Reference paper (DOI): 10.1109/ACCESS.2020.2969474}
-\date{2023}
+\date{31-01-2023}
 % \logo{\includegraphics[height=1.2cm]{./logos/unipi}}
 \addtobeamertemplate{title page}{}{}
 %% -- 
@@ -159,8 +159,7 @@
 \section{5G EAP-TLS authentication protocol}
 \begin{frame}
 	\frametitle{5G EAP-TLS protocol entities}
-
-	Involved entities:\pause
+  
 	\begin{itemize}
 		\item Home Network (HN):
 		      \begin{itemize}
@@ -169,11 +168,15 @@
 				            \item Certificate $\cert{AUSF}$
 			            \end{itemize}
 			      \item Unified Data Management (\myhl{UDM})
+			            \begin{itemize}
+				            \item Authentication Credential Repository and Processing Function (\myhl{ARPF})
+				            \item Subscription Identifier De-concealing Function (\myhl{SIDF})
+			            \end{itemize}
 		      \end{itemize} \pause
 		\item User Equipment (UE):
 		      \begin{itemize}
 			      \item Subscription Permanent Identifier (\myhl{SUPI})
-			      \item Public asymmetric keys $pk_{AUSF}, pk_{UDM}$
+			      \item Public asymmetric key $pk_{UDM}$
 			      \item Certificate $\cert{UE}$
 		      \end{itemize} \pause
 		\item Serving Network (SN):
@@ -258,15 +261,16 @@
 					\myaction{\parbox{5cm}{\raggedright
 							Validate $\cert{UE}$\\
 							Derive $\key{session} = \hash{\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}}$\\
-							Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$
+							Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$\\
+							Verify $\sign{\hash{\hs{AUSF}}}{ssk_{UE}}$
 						}}{ausf}
 
-					\nextlevel[11]
+					\nextlevel[13]
 					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{ausf}{seaf}
 					\mymess{$\enc{\hash{\hs{AUSF}}}{\key{session}}$}{seaf}{ue}
 					\nextlevel
 					\myaction{\parbox{4.5cm}{\centering Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$}}{ue}
-					\nextlevel[8]
+					\nextlevel[7]
 					\mymess{$EAP\_TLS$}{ue}{seaf}
 					\mymess{$EAP\_TLS$}{seaf}{ausf}
 					\nextlevel
@@ -311,23 +315,23 @@
 \end{frame}
 
 \section{Counterexamples}
-\begin{frame}
-	\frametitle{Broken properties}
-
-	\begin{itemize}
-		\item \textbf{Authentication properties}:
-		      \begin{enumerate}
-			      \item[\color{red}A1.] {\color{red}Both the home network and the subscriber should agree on the identity of each other after successful termination}
-			      \item[\color{red}A2.] {\color{red}Both the home network and the subscriber should agree on the pre-master key $\nonce{prekey}$ after successful termination}
-		      \end{enumerate}
-		\item \textbf{Secrecy properties}:
-		      \begin{enumerate}
-			      \item[\color{Green}S1.] {\color{Green}The attacker cannot obtain the identity $SUPI$ of an honest subscriber}
-			      \item[\color{Green}S2.] {\color{Green}The attacker cannot obtain the pre-master key $\nonce{prekey}$ of an honest subscriber}
-			      \item[\color{Green}S3.] {\color{Green}The attacker cannot obtain the session key $\key{session}$ of an honest subscriber}
-		      \end{enumerate}
-	\end{itemize}
-\end{frame}
+% \begin{frame}
+% 	\frametitle{Broken properties}
+%
+% 	\begin{itemize}
+% 		\item \textbf{Authentication properties}:
+% 		      \begin{enumerate}
+% 			      \item[\color{red}A1.] {\color{red}Both the home network and the subscriber should agree on the identity of each other after successful termination}
+% 			      \item[\color{red}A2.] {\color{red}Both the home network and the subscriber should agree on the pre-master key $\nonce{prekey}$ after successful termination}
+% 		      \end{enumerate}
+% 		\item \textbf{Secrecy properties}:
+% 		      \begin{enumerate}
+% 			      \item[\color{Green}S1.] {\color{Green}The attacker cannot obtain the identity $SUPI$ of an honest subscriber}
+% 			      \item[\color{Green}S2.] {\color{Green}The attacker cannot obtain the pre-master key $\nonce{prekey}$ of an honest subscriber}
+% 			      \item[\color{Green}S3.] {\color{Green}The attacker cannot obtain the session key $\key{session}$ of an honest subscriber}
+% 		      \end{enumerate}
+% 	\end{itemize}
+% \end{frame}
 
 \begin{frame}[fragile]
 	\frametitle{Counterexample for property A1}
@@ -351,13 +355,13 @@
 				\nextlevel[9]
 				\mess[text width=7cm,align=center]{\footnotesize
 					$\enc{\nonce{prekey}}{pk_{AUSF}}, \cert{UE},$
-					$\sign{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{ssk_{UE}},$
-					$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$
+					$\sign{\hash{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}}{ssk_{UE}},$
+					$\enc{\hash{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$
 				}{ue}{atk}
 				\nextlevel[5]
-				\mymess{$\enc{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$}{atk}{ue}
+				\mymess{$\enc{\hash{\textcolor{red}{START^*}, \nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \cert{AUSF}}}{\hash{\nonce{UE1}, \textcolor{red}{\nonce{AUSF}^*}, \nonce{prekey}}}$}{atk}{ue}
 				\nextlevel
-				\myaction{event $termUE$}{ue}
+				\myaction{\textcolor{red}{event $termUE$}}{ue}
 				\nextlevel[2]
 			\end{msc}
 		}
@@ -443,5 +447,12 @@
 			}
 		\end{figure}
 	}
+\end{frame}
+
+\section*{}
+\begin{frame}[standout]
+	\centering\huge
+	\textbf{\itshape\scshape THANKS} \\
+	for your attention!!
 \end{frame}
 \end{document}
