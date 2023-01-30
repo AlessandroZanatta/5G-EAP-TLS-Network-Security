@@ -159,7 +159,7 @@
 \section{5G EAP-TLS authentication protocol}
 \begin{frame}
 	\frametitle{5G EAP-TLS protocol entities}
-  
+
 	\begin{itemize}
 		\item Home Network (HN):
 		      \begin{itemize}
@@ -262,7 +262,7 @@
 							Validate $\cert{UE}$\\
 							Derive $\key{session} = \hash{\nonce{UE1}, \nonce{prekey}, \nonce{AUSF}}$\\
 							Check $\hash{\hs{AUSF}} = \hash{\hs{UE}}$\\
-							Verify $\sign{\hash{\hs{AUSF}}}{ssk_{UE}}$
+							Verify $\sign{\hash{\hs{UE}}}{ssk_{UE}}$
 						}}{ausf}
 
 					\nextlevel[13]
